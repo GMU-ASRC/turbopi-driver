@@ -1,0 +1,24 @@
+[project]
+name = "asrc_turbopi_driver"
+import-names = ["rasadapter4"]
+version = "0.0.1"
+authors = [
+  { name="Kevin Zhu", email="kzhu4@gmu.edu" },
+]
+dependencies = [
+  "RPi.GPIO",
+  "smbus2",
+  "numpy",
+  "retry",
+]
+description = "Code to interface with HiWonder Rasadapter for TurboPi"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
+
+# [project.urls]
+# Homepage = "https://github.com/pypa/sampleproject"
+# Issues = "https://github.com/pypa/sampleproject/issues"
