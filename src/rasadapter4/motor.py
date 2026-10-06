@@ -29,7 +29,7 @@ class I2CMotor:
         if speed is not None:
             self.set_speed(speed)
 
-    @retry((OSError), stop_max_attempt_number=3, delay=1, backoff=3)
+    @retry((OSError), tries=3, delay=1, backoff=3)
     def set_speed(self, speed):
         speed = int(clamp(speed, -100, 100))
         msg = i2c_msg.write(
@@ -56,7 +56,7 @@ class I2CMotor:
     def stop(self):
         self.set_speed(0)
 
-    @retry((OSError), stop_max_attempt_number=3, delay=1, backoff=3)
+    @retry((OSError), tries=3, delay=1, backoff=3)
     def _set_speed_contiguous(self, speeds):
         # not meant to be used directly
         # called by Motors.set_speeds for optimized

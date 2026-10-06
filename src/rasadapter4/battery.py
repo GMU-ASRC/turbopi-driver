@@ -16,7 +16,7 @@ class Battery:
         if register is not None:
             self.register = register
 
-    @retry((OSError), stop_max_attempt_number=3, delay=1, backoff=3)
+    @retry((OSError), tries=3, delay=1, backoff=3)
     def get_voltage(self):
         msg = i2c_msg.write(self.address, [self.register,])
         read = i2c_msg.read(self.address, 2)

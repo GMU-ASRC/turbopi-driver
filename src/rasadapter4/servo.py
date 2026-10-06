@@ -37,7 +37,7 @@ class I2CServo:
         elif angle is not None:
             self.set_deg(angle)
 
-    @retry((OSError), stop_max_attempt_number=3, delay=1, backoff=3)
+    @retry((OSError), tries=3, delay=1, backoff=3)
     def set_pulse(self, pulse, limit=True):
         if limit:
             pulse = clamp(pulse, self.min_pulse, self.max_pulse)

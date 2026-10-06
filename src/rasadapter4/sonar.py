@@ -36,7 +36,7 @@ class I2CSonar:
         self._pixel_values = [0, 0]
         self.RGBMode = 0
 
-    @retry((OSError), stop_max_attempt_number=3, delay=1, backoff=3)
+    @retry((OSError), tries=3, delay=1, backoff=3)
     def set_rgb_mode(self, mode):
         with SMBus(self.bus_id) as bus:
             bus.write_byte_data(self.address, self.REG_RGB_MODE, mode)
@@ -47,21 +47,21 @@ class I2CSonar:
     def __len__(self):
         return self.numPixels()
 
-    @retry((OSError), stop_max_attempt_number=3, delay=1, backoff=3)
+    @retry((OSError), tries=3, delay=1, backoff=3)
     def write_color_register(self, register: int, value: int):
         if value < 0 or value > 255:
             raise ValueError("Value not between 0 and 255: ", value)
         with SMBus(self.bus_id) as bus:
             bus.write_byte_data(self.address, register, value)
 
-    @retry((OSError), stop_max_attempt_number=3, delay=1, backoff=3)
+    @retry((OSError), tries=3, delay=1, backoff=3)
     def write_pixel_register_sep(self, start_register: int, rgb: int):
         with SMBus(self.bus_id) as bus:
             bus.write_byte_data(self.address, start_register, 0xFF & (rgb >> 16))
             bus.write_byte_data(self.address, start_register + 1, 0xFF & (rgb >> 8))
             bus.write_byte_data(self.address, start_register + 2, 0xFF & rgb)
 
-    @retry((OSError), stop_max_attempt_number=3, delay=1, backoff=3)
+    @retry((OSError), tries=3, delay=1, backoff=3)
     def write_pixel_registers(self, start_register: int, rgb: int):
         # data = [start_register, 0xFF & (rgb >> 16), 0xFF & (rgb >> 8), 0xFF & rgb]
         data = [start_register, *int(rgb).to_bytes(3, 'little', signed=False)]
@@ -92,7 +92,7 @@ class I2CSonar:
         with SMBus(self.bus_id) as bus:
             bus.write_byte_data(self.address, reg, ms)
 
-    @retry((OSError), stop_max_attempt_number=3, delay=1, backoff=3)
+    @retry((OSError), tries=3, delay=1, backoff=3)
     def measure_distance(self):
         msg = i2c_msg.write(self.address, [self.REG_DIST,])
         read = i2c_msg.read(self.address, 2)
