@@ -17,12 +17,17 @@ class Battery:
             self.register = register
 
     @retry((OSError), tries=3, delay=1, backoff=3)
-    def get_voltage(self):
+    def read_register_v(self):
         msg = i2c_msg.write(self.address, [self.register,])
         read = i2c_msg.read(self.address, 2)
         with SMBus(self.bus_id) as bus:
-            bus.i2c_rdwr(msg, read)
+            bus.i2c_rdwr(msg)  # does not support repeated start
+            bus.i2c_rdwr(read)  # do not combine with previous line
         return int.from_bytes(bytes(list(read)), 'little')
+
+    @property
+    def voltage(self):
+        return self.read_register_v() / 1000.0
 
 
 def get_default_battery():
