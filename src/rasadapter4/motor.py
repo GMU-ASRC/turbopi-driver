@@ -85,7 +85,7 @@ class I2CMotor:
 class Motors:
     def __init__(self, motors=4, offset=0, **kwargs):
         if isinstance(motors, (int, slice)):
-            motor_indices = slice(motors)
+            motor_indices = range(motors)
         else:
             motor_indices = motors
         self.offset = offset
