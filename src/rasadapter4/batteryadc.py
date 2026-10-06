@@ -6,6 +6,7 @@ class Battery:
     bus_id = 1
     address = 0x7A  # 122
     register = 0x0
+    failed_read_value = -1
 
     def __init__(self, i2c=None, address=None, register=None):
         # the ifs make it use the class defaults if not specified (shared across all instances)
@@ -27,7 +28,10 @@ class Battery:
 
     @property
     def voltage(self):
-        return self.read_register_v() / 1000.0
+        v = self.read_register_v()
+        if v < 1 or v > 20000:
+            return self.failed_read_value
+        return v / 1000.0
 
 
 def get_default_battery():
