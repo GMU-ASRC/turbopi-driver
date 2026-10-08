@@ -15,12 +15,13 @@ class I2CServo:
     bus_id = 1
     address = 0x7A  # 122
     base_register = 0x15  # 21
+    SERVO_CMD_REG = 0x28  # 40
     min_angle = 0
     max_angle = 180
     min_pulse = 500
     max_pulse = 2500
 
-    def __init__(self, index, i2c=None, address=None, base_register=None,
+    def __init__(self, index: int, i2c=None, address=None, base_register=None,
                  angle=None, pulse=None):
         # the ifs make it use the class defaults if not specified (shared across all instances)
         if i2c is not None:
@@ -29,6 +30,7 @@ class I2CServo:
             self.address = address
         if base_register is not None:
             self.base_register = base_register
+        self.index = index
         self.register = self.base_register + index
         self._deg = None
         self._pulse = None
@@ -38,23 +40,35 @@ class I2CServo:
             self.set_deg(angle)
 
     @retry((OSError), tries=3, delay=1, backoff=3)
-    def set_pulse(self, pulse, limit=True):
+    def set_pulse(self, pulse, use_time=None, limit=True):
         if limit:
             pulse = clamp(pulse, self.min_pulse, self.max_pulse)
         pulse = int(round(pulse))
-        msg = i2c_msg.write(
-            self.address,
-            [
+        if use_time is None:
+            data = [
                 self.register,
                 pulse.to_bytes(1, 'little', signed=True)[0]
             ]
-        )
+        else:
+            if use_time not in range(0, 30001):
+                raise ValueError("use_time must be in range(0, 30000)")
+            data = [
+                self.SERVO_CMD_REG,
+                1,
+                *list(use_time.to_bytes(2, 'little')),
+                int(self.index),
+                *list(pulse.to_bytes(2, 'little'))
+            ]
+        msg = i2c_msg.write(self.address, data)
         with SMBus(self.bus_id) as bus:
             bus.open(self.bus_id)
             bus.i2c_rdwr(msg)
             bus.close()
         self._pulse = pulse
-        self._deg = fmap(pulse, self.min_pulse, self.max_pulse, self.min_angle, self.max_angle)
+        try:
+            self._deg = fmap(pulse, self.min_pulse, self.max_pulse, self.min_angle, self.max_angle)
+        except Exception as e:
+            warn(str(e), ImportWarning, stacklevel=2)
 
     def set_deg(self, degrees, limit=True):
         if limit:
