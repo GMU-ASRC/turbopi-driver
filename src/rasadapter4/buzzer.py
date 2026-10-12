@@ -1,8 +1,8 @@
 import RPi.GPIO as GPIO
 
-DEFAULT_PIN = 31
+DEFAULT_PIN = 6  # GPIO 6, board pin 31 on RPi4b
 
-GPIO.setmode(GPIO.BOARD)
+GPIO.setmode(GPIO.BCM)
 
 
 def set_buzzer(new_state, pin=DEFAULT_PIN):
