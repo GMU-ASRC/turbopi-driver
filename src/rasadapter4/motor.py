@@ -1,3 +1,18 @@
+"""
+I2C Motor Driver
+================
+This driver is for the I2C motor driver on the Hiwonder Rasadapter 4.
+
+.. autoclass:: I2CMotor
+    :members:
+
+.. autoclass:: Motors
+    :members:
+
+.. autofunction:: get_default_motors
+"""
+
+
 from warnings import warn
 
 import numpy as np
@@ -12,6 +27,24 @@ def is_contiguous_indices(indices):
 
 
 class I2CMotor:
+    """Single I2CMotor Instance to control motor speed.
+
+    Functions which send commands to the board will retry up to 3 times.
+
+    Parameters
+    ----------
+    index : int
+        Motor index (0-3)
+    i2c : int, default=1
+        I2C bus channel
+    address : int, default=0x7A
+        I2C peripheral address (rasadapter MCU)
+    base_register : int, default=0x1F
+        I2C register base address
+    speed : int, default=None
+        Initial motor speed in percent (0-100)
+    """
+
     bus_id = 1
     address = 0x7A  # 122
     base_register = 0x1F  # 31
@@ -31,6 +64,13 @@ class I2CMotor:
 
     @retry((OSError), tries=3, delay=1, backoff=3)
     def set_speed(self, speed):
+        """Send command to set motor speed.
+
+        Parameters
+        ----------
+        speed : int
+            Motor speed in percent [-100, 100]
+        """
         speed = int(clamp(speed, -100, 100))
         msg = i2c_msg.write(
             self.address,
@@ -47,6 +87,13 @@ class I2CMotor:
 
     @property
     def speed(self):
+        """Set motor speed or get most recently set speed.
+
+        Parameters
+        ----------
+        speed : int
+            Motor speed in percent [-100, 100]
+        """
         return self._speed
 
     @speed.setter
@@ -54,6 +101,9 @@ class I2CMotor:
         self.set_speed(speed)
 
     def stop(self):
+        """Stop the motor.
+        Equivalent to `motor.speed = 0`
+        """
         self.set_speed(0)
 
     @retry((OSError), tries=3, delay=1, backoff=3)
@@ -84,6 +134,28 @@ class I2CMotor:
 
 class Motors:
     def __init__(self, motors=4, offset=0, **kwargs):
+        """Group of motors.
+
+        Optimization: If the selected motors are contiguous, the speeds will be set
+        using a single I2C command.
+
+        Parameters
+        ----------
+        motors : int | slice | list, optional
+            Indices of motors to use.
+        offset : int, default=0
+            Offset to add to motor indices.
+            Useful if you want to refer to the first motor as motors[1].
+
+        Examples
+        --------
+        >>> motors = Motors(4)
+        >>> motors[0] = 100
+        >>> motors[0]
+        100
+        >>> motors.speeds = [100, 100, 100, 100]  # set all motors to 100
+        >>> motors.stop()  # stop all motors
+        """
         if isinstance(motors, (int, slice)):
             motor_indices = range(motors)
         else:
@@ -98,6 +170,13 @@ class Motors:
             raise IndexError(msg)
 
     def set_speed(self, index, speed):
+        """Set the speed of a motor in the group.
+
+        Parameters
+        ----------
+        index : int
+        speed : float
+        """
         self.check_index(index)
         self.motors[index + self.offset].set_speed(speed)
 
@@ -111,6 +190,23 @@ class Motors:
 
     @property
     def speeds(self):
+        """Get/set the speeds of all motors in the group.
+
+        If the motors are contiguous, the speeds will be set using a single I2C command.
+
+        Parameters
+        ----------
+        speeds : list
+            List of motor speeds in percent [-100, 100].
+            The length of the list must match the number of motors in the group.
+            If the motors are not contiguous, the speeds must be provided
+            in the order this instance was initialized with.
+
+        Returns
+        -------
+        list
+            List of motor speeds.
+        """
         return [motor.speed for motor in self.motors.values()]
 
     @speeds.setter
@@ -123,6 +219,13 @@ class Motors:
             motor.set_speed(speed)
 
     def set_speeds_contiguous(self, speeds):
+        """Set the motor speeds using a single I2C command.
+
+        Parameters
+        ----------
+        speeds : Iterable
+            List of motor speeds [-100, 100].
+        """
         motor = next(iter(self.motors.values()))
         motor._set_speed_contiguous(speeds)
         for motor, speed in zip(self.motors.values(), speeds):
@@ -130,6 +233,18 @@ class Motors:
 
     @property
     def speedsdict(self):
+        """Get/set the speeds of specific motors in the group.
+
+        Parameters
+        ----------
+        speedsdict : dict
+            Dictionary of motor speeds in percent [-100, 100].
+
+        Returns
+        -------
+        dict
+            Dictionary of motor speeds.
+        """
         return {i: motor.speed for i, motor in self.motors.items()}
 
     @speedsdict.setter
@@ -138,6 +253,7 @@ class Motors:
             self.motors[i].set_speed(speed)
 
     def stop(self):
+        """Stop all motors in the group."""
         for motor in self.motors.values():
             motor.stop()
 
@@ -145,6 +261,9 @@ class Motors:
 def get_default_motors():
     return Motors(4)
 
+
+#: The default motors instance.
+motors: Motors
 
 try:
     motors = get_default_motors()

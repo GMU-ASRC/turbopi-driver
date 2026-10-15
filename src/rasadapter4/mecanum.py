@@ -1,3 +1,13 @@
+"""
+Mecanum Drive
+=============
+This driver is for the mecanum drive on the Hiwonder Rasadapter 4.
+
+.. autoclass:: MecanumChassis
+    :members:
+"""
+
+
 from .motor import motors
 
 from numpy import cos, sin, pi, sqrt
@@ -5,20 +15,33 @@ from math import atan
 
 
 class MecanumChassis:
-    # A = 67  # mm
-    # B = 59  # mm
-    # WHEEL_DIAMETER = 65  # mm
+    """Move the mecanum robot using polar coordinates.
 
-    def __init__(self, a=67, b=59, wheel_diameter=65, motors=motors):
+    Parameters
+    ----------
+    a : float, default=67
+    b : float, default=59
+    wheel_diameter : float, default=65 (mm)
+    motors : Motors, optional
+    """
+    A = 67  # mm
+    B = 59  # mm
+    WHEEL_DIAMETER = 65  # mm
+
+    def __init__(self, a=None, b=None, wheel_diameter=None, motors=motors):
+        if a is not None:
+            self.a = a
+        if b is not None:
+            self.b = b
+        if wheel_diameter is not None:
+            self.wheel_diameter = wheel_diameter
         self.motors = motors
-        self.a = a
-        self.b = b
-        self.wheel_diameter = wheel_diameter
         self._velocity = 0
         self._direction = 0
         self._angular_rate = 0
 
     def reset(self):
+        """Stop the motors."""
         self.motors.stop()
 
         self._velocity = 0
@@ -28,14 +51,23 @@ class MecanumChassis:
     def set_velocity(self, velocity, direction, angular_rate, fake=False):
         """
         Use polar coordinates to control moving
-        motor1 fl|  ↑  |fr motor2
-                 |     |
-        motor3 rl|     |rr motor4
-        :param velocity: mm/s
-        :param direction: Moving direction 0~360deg, 180deg<--- ↑ ---> 0deg
-        :param angular_rate:  The speed at which the chassis rotates
-        :param fake:
-        :return:
+
+        ::
+
+            motor1 fl|  ↑  |fr motor2
+                     |     |
+            motor3 rl|     |rr motor4
+
+        Parameters
+        ----------
+        velocity: float
+            velocity in mm/s. Can range from [-100, 100]
+        direction: float
+            direction in degrees.
+        angular_rate: float
+            angular rate in degrees/s. Can be roughly [-0.794, 0.794]
+        fake: bool, default=False
+            if True, do not set motor speeds.
         """
         rad_per_deg = pi / 180
         vx = velocity * cos(direction * rad_per_deg)

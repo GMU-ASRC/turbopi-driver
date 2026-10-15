@@ -1,6 +1,17 @@
+"""
+I2C Servo Driver
+================
+This driver is for the I2C PWM servo driver on the Hiwonder Rasadapter 4.
+
+.. autoclass:: I2CServo
+    :members:
+
+.. autofunction:: get_default_servos
+"""
+
+
 from warnings import warn
 
-import numpy as np
 from retry import retry
 from numpy import clip as clamp
 from smbus2 import SMBus, i2c_msg
@@ -12,6 +23,33 @@ def fmap(x, in_min, in_max, out_min, out_max):
 
 
 class I2CServo:
+    """Single I2C Servo instance to control servo position or pulse width.
+
+    Functions which send commands to the board will retry up to 3 times.
+
+    Parameters
+    ----------
+    index : int
+        The index of I2C Servo PWM output. 0-5.
+    i2c : int, default=1
+        I2C bus channel
+    address : int, default=0x7A
+        I2C peripheral address (rasadapter MCU)
+    base_register : int, default=0x15
+        I2C register base address
+    angle : int, default=None
+        Initial angle in degrees. 0-180.
+    pulse : int, default=None
+        Initial pulse width in microseconds. 500-2500.
+
+    Examples
+    --------
+    >>> servo = I2CServo(0)
+    >>> servo.pulse = 1500
+    >>> servo.pulse
+    1500
+    >>> servo.deg = 90
+    """
     bus_id = 1
     address = 0x7A  # 122
     base_register = 0x15  # 21
@@ -41,6 +79,20 @@ class I2CServo:
 
     @retry((OSError), tries=3, delay=1, backoff=3)
     def set_pulse(self, pulse, use_time=None, limit=True):
+        """Set the pulse width of the servo.
+
+        Parameters
+        ----------
+        pulse : float
+            The pulse width in microseconds.
+        use_time : None | int, optional
+        limit : bool, default=True
+            Limit the pulse width to within I2CServo.min_pulse and I2CServo.max_pulse.
+
+        Raises
+        ------
+        ValueError
+        """
         if limit:
             pulse = clamp(pulse, self.min_pulse, self.max_pulse)
         pulse = int(round(pulse))
@@ -68,9 +120,18 @@ class I2CServo:
         try:
             self._deg = fmap(pulse, self.min_pulse, self.max_pulse, self.min_angle, self.max_angle)
         except Exception as e:
-            warn(str(e), ImportWarning, stacklevel=2)
+            warn(str(e), RuntimeWarning, stacklevel=2)
 
     def set_deg(self, degrees, limit=True):
+        """Set the angle of the servo.
+
+        Parameters
+        ----------
+        degrees : float
+            The angle in degrees.
+        limit : bool, default=True
+            Limit the angle to within I2CServo.min_angle and I2CServo.max_angle.
+        """
         if limit:
             degrees = clamp(degrees, self.min_angle, self.max_angle)
         self.set_pulse(fmap(degrees, self.min_angle, self.max_angle,
@@ -78,6 +139,18 @@ class I2CServo:
 
     @property
     def deg(self):
+        """Get/set the angle of the servo.
+
+        Parameters
+        ----------
+        degrees : float
+            The angle in degrees.
+
+        Returns
+        -------
+        float
+            The last angle set, in degrees.
+        """
         return self._deg
 
     @deg.setter
@@ -86,6 +159,18 @@ class I2CServo:
 
     @property
     def pulse(self):
+        """Get/set the pulse width of the servo.
+
+        Parameters
+        ----------
+        speed : int
+            The pulse width in microseconds.
+
+        Returns
+        -------
+        int
+            The last pulse width set, in microseconds.
+        """
         return self._pulse
 
     @pulse.setter
@@ -93,12 +178,16 @@ class I2CServo:
         self.set_pulse(speed)
 
     def center(self):
+        """Set the angle of the servo to 90 degrees."""
         self.set_deg(90)
 
 
 def get_default_servos():
     return [I2CServo(i) for i in range(6)]
 
+
+#: List of 6 default servos.
+servos: list[I2CServo]
 
 try:
     servos = get_default_servos()
