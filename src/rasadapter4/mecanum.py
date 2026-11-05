@@ -54,18 +54,23 @@ class MecanumChassis:
 
         ::
 
+                       90 deg
             motor1 fl|  ↑  |fr motor2
-                     |     |
+            180      |     |        0 deg
             motor3 rl|     |rr motor4
+                       270
 
         Parameters
         ----------
         velocity: float
-            velocity in mm/s. Can range from [-100, 100]
+            velocity in mm/s.
+            velocity is constrained to [-100, 100].
         direction: float
             direction in degrees.
+            0 is strafe right, 90 is forwards (see above diagram).
         angular_rate: float
-            angular rate in degrees/s. Can be roughly [-0.794, 0.794]
+            angular rotation rate in degrees/s.
+            is constrained to roughly [-0.794, 0.794]
         fake: bool, default=False
             if True, do not set motor speeds.
         """
