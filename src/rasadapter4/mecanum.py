@@ -24,8 +24,8 @@ class MecanumChassis:
     wheel_diameter : float, default=65 (mm)
     motors : Motors, optional
     """
-    A = 67  # mm
-    B = 59  # mm
+    a = 67  # mm
+    b = 59  # mm
     WHEEL_DIAMETER = 65  # mm
 
     def __init__(self, a=None, b=None, wheel_diameter=None, motors=motors):
