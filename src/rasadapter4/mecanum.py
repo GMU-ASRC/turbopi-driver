@@ -84,7 +84,7 @@ class MecanumChassis:
         rr = int(vy + vx + vp)
         if fake:
             return
-        self.motors.speeds = [fl, fr, rl, rr]  # set speeds
+        self.motors.speeds = [-fl, fr, -rl, rr]  # set speeds
         self._velocity = velocity
         self._direction = direction
         self._angular_rate = angular_rate
